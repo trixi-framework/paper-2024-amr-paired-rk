@@ -1,6 +1,7 @@
 # Multirate Time-Integration based on Dynamic ODE Partitioning through Adaptively Refined Meshes for Compressible Fluid Dynamics
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-success.svg)](https://opensource.org/licenses/MIT)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.10792779.svg)](https://doi.org/10.5281/zenodo.10792779)
 
 This repository contains information and code to reproduce the results presented in the article
 ```bibtex
@@ -22,6 +23,7 @@ If you find these results useful, please cite the article mentioned above. If yo
           and Torrilhon, Manuel},
   year={2024},
   howpublished={\url{https://github.com/trixi-framework/paper-2024-amr-paired-rk}},
+doi={https://doi.org/10.5281/zenodo.10792779}
 }
 ```
 
