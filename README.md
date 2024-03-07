@@ -23,7 +23,7 @@ If you find these results useful, please cite the article mentioned above. If yo
           and Torrilhon, Manuel},
   year={2024},
   howpublished={\url{https://github.com/trixi-framework/paper-2024-amr-paired-rk}},
-doi={https://doi.org/10.5281/zenodo.10792779}
+  doi={https://doi.org/10.5281/zenodo.10792779}
 }
 ```
 
