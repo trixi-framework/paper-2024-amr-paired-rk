@@ -1,0 +1,28 @@
+{
+    "license": "MIT",
+    "title": "Reproducibility repository for Multirate Time-Integration based on Dynamic ODE Partitioning through Adaptively Refined Meshes for Compressible Fluid Dynamics",
+    "upload_type": "software",
+    "creators": [
+        {
+            "affiliation": "Applied and Computational Mathematics (ACoM); RWTH Aachen University, Germany",
+            "name": "Doehring, Daniel",
+            "orcid": "0009-0005-4260-0332"
+        },
+        {
+          "affiliation": "Applied and Computational Mathematics (ACoM); RWTH Aachen University, Germany",
+          "name": "Schlottke-Lakemper, Michael",
+          "orcid": "0000-0002-3195-2536"
+        },
+        {
+          "affiliation": "Department of Mathematics and Computer Science; Center for Data and Simulation Science, University of Cologne, Germany",
+          "name": "Gassner, Gregor J",
+          "orcid": "0000-0002-1752-1158"
+        },
+        {
+          "affiliation": "Applied and Computational Mathematics (ACoM); RWTH Aachen University, Germany",
+          "name": "Torrilhon, Manuel",
+          "orcid": "0000-0003-0008-2061"
+        }
+    ],
+    "access_right": "open"
+}
