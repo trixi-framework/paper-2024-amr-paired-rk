@@ -11,6 +11,10 @@ This repository contains information and code to reproduce the results presented
   author={Doehring, Daniel and Schlottke-Lakemper, Michael and Gassner, Gregor J.
           and Torrilhon, Manuel},
   year={2024},
+  eprint={2403.05144},
+  eprinttype={arxiv},
+  eprintclass={math.NA},
+  url={https://arxiv.org/abs/2403.05144}
 }
 ```
 If you find these results useful, please cite the article mentioned above. If you use the implementations provided here, please also cite this repository as
