@@ -15,7 +15,8 @@ This repository contains information and code to reproduce the results presented
   eprinttype={arxiv},
   eprintclass={math.NA},
   url={https://arxiv.org/abs/2403.05144},
-  journal={arXiv preprint arXiv:2402.12140}
+  journal={arXiv preprint arXiv:2402.12140},
+  doi={10.48550/arXiv.2403.05144}
 }
 ```
 If you find these results useful, please cite the article mentioned above. If you use the implementations provided here, please also cite this repository as
