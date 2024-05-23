@@ -109,7 +109,7 @@ The precise number of threads for the different cases is given in `elixirs/sec7_
 * [Gregor J. Gassner](https://www.mi.uni-koeln.de/NumSim/gregor-gassner/)
 * [Manuel Torrilhon](https://www.acom.rwth-aachen.de/the-lab/team-people/name:manuel_torrilhon)
 
-Note that the Trixi authors are listed seperately [here](https://github.com/trixi-framework/paper-2024-amr-paired-rk/blob/main/Trixi.jl-v0.5.42%2Bmod/AUTHORS.md).
+Note that the Trixi authors are listed separately [here](https://github.com/trixi-framework/paper-2024-amr-paired-rk/blob/main/Trixi.jl-v0.5.42%2Bmod/AUTHORS.md).
 
 ## Disclaimer
 
