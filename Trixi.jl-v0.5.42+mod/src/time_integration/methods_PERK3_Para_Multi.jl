@@ -659,39 +659,41 @@ function solve!(integrator::PERK3_Multi_Para_Integrator)
 
         integrator.t_stage = integrator.t + alg.c[stage] * integrator.dt
 
+        # For statically refined meshes:
+        #integrator.coarsest_lvl = alg.HighestActiveLevels[stage]
+
         # "coarsest_lvl" cannot be static for AMR, has to be checked with available levels
         integrator.coarsest_lvl = min(alg.HighestActiveLevels[stage], integrator.n_levels)
 
         # Check if there are fewer integrators than grid levels (non-optimal method)
         if integrator.coarsest_lvl == alg.NumMethods
-          integrator.coarsest_lvl = integrator.n_levels
-        end
+            # NOTE: This is supposedly more efficient than setting
+            #integrator.coarsest_lvl = integrator.n_levels
+            # and then using the level-dependent version
 
-        # For statically refined meshes:
-        #integrator.coarsest_lvl = alg.HighestActiveLevels[stage]
+            integrator.f(integrator.du, integrator.u_tmp, prob.p, integrator.t_stage, integrator.du_ode_hyp)
 
-        #=
-        for stage_callback in alg.stage_callbacks
-          stage_callback(integrator.u_tmp, integrator, prob.p, integrator.t_stage)
-        end
-        =#
-        
-        # Joint RHS evaluation with all elements sharing this timestep
-        integrator.f(integrator.du, integrator.u_tmp, prob.p, integrator.t_stage, 
-                    integrator.level_info_elements_acc[integrator.coarsest_lvl],
-                    integrator.level_info_interfaces_acc[integrator.coarsest_lvl],
-                    integrator.level_info_boundaries_acc[integrator.coarsest_lvl],
-                    integrator.level_info_boundaries_orientation_acc[integrator.coarsest_lvl],
-                    integrator.level_info_mortars_acc[integrator.coarsest_lvl],
-                    integrator.level_u_indices_elements, integrator.coarsest_lvl,
-                    integrator.du_ode_hyp)
-        
+            @threaded for u_ind in eachindex(integrator.du)
+                integrator.k_higher[u_ind] = integrator.du[u_ind] * integrator.dt
+            end
+        else
+          integrator.f(integrator.du, integrator.u_tmp, prob.p, integrator.t_stage, 
+                        integrator.level_info_elements_acc[integrator.coarsest_lvl],
+                        integrator.level_info_interfaces_acc[integrator.coarsest_lvl],
+                        integrator.level_info_boundaries_acc[integrator.coarsest_lvl],
+                        integrator.level_info_boundaries_orientation_acc[integrator.coarsest_lvl],
+                        integrator.level_info_mortars_acc[integrator.coarsest_lvl],
+                        integrator.level_u_indices_elements, integrator.coarsest_lvl,
+                        integrator.du_ode_hyp)
 
-        # Update k_higher of relevant levels
-        for level in 1:integrator.coarsest_lvl
-          @threaded for u_ind in integrator.level_u_indices_elements[level]
-            integrator.k_higher[u_ind] = integrator.du[u_ind] * integrator.dt
-          end
+
+            # Update k_higher of relevant levels
+            for level in 1:(integrator.coarsest_lvl)
+                @threaded for u_ind in integrator.level_u_indices_elements[level]
+                    integrator.k_higher[u_ind] = integrator.du[u_ind] *
+                                                integrator.dt
+                end
+            end
         end
 
         if stage == alg.NumStages - 1
