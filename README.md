@@ -98,7 +98,7 @@ For all cases in the `applications` directory the solution has been computed usi
 threads.
 To specify the number of threads the [`--threads` flag](https://docs.julialang.org/en/v1/manual/multi-threading/#Starting-Julia-with-multiple-threads) needs to be specified, i.e., 
 ```bash
-julia --project=. --threads 8 ./sec7_applications/hyperbolic_parabolic/doubly_periodic_shear_layer/PERK3_3_4_7.jl
+julia --project=. --threads 8 ./sec7_applications/sec_7.1_hyperbolic_parabolic/doubly_periodic_shear_layer/PERK3_3_4_7.jl
 ```
 The precise number of threads for the different cases is given in `elixirs/sec7_applications/README.md`.
 
