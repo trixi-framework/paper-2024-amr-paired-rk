@@ -106,5 +106,5 @@ summary_callback() # print the timer summary
 
 
 pd = PlotData2D(sol)
-plot(pd["v1"], title = "\$v_x, t=0.8\$")
+plot(pd["v1"], title = "\$v_x, t=0.8\$", c = :jet)
 plot(getmesh(pd), xlabel = "\$x\$", ylabel="\$y\$", title = "Mesh at \$t = 0.8\$")
