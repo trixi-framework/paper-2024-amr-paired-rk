@@ -54,7 +54,6 @@ mutable struct PERK3_IntegratorPara{RealT<:Real, uType, Params, Sol, F, Alg, PER
   # PERK stages:
   k1::uType
   k_higher::uType
-  k_S1::uType # Required for third order
   t_stage::RealT
   du_ode_hyp::uType
 end
@@ -79,7 +78,6 @@ function solve(ode::ODEProblem, alg::PERK3_Para;
   # PERK stages
   k1       = zero(u0)
   k_higher = zero(u0)
-  k_S1     = zero(u0)
 
   du_ode_hyp = zero(u0)
 
@@ -89,7 +87,7 @@ function solve(ode::ODEProblem, alg::PERK3_Para;
   integrator = PERK3_IntegratorPara(u0, du, u_tmp, t0, dt, zero(dt), iter, ode.p,
                                 (prob=ode,), ode.f, alg,
                                 PERK_IntegratorOptions(callback, ode.tspan; kwargs...), false,
-                                k1, k_higher, k_S1, t0, du_ode_hyp)
+                                k1, k_higher, t0, du_ode_hyp)
             
   # initialize callbacks
   if callback isa CallbackSet
@@ -146,15 +144,9 @@ function solve!(integrator::PERK3_IntegratorPara)
       @threaded for i in eachindex(integrator.du)
         integrator.k_higher[i] = integrator.du[i] * integrator.dt
       end
-
-      if alg.NumStages == 3
-        @threaded for i in eachindex(integrator.du)
-          integrator.k_S1[i] = integrator.k_higher[i]
-        end
-      end
       
       # Higher stages
-      for stage = 3:alg.NumStages
+      for stage = 3:(alg.NumStages - 1)
         integrator.t_stage = integrator.t + alg.c[stage] * integrator.dt
 
         # Construct current state
@@ -168,20 +160,26 @@ function solve!(integrator::PERK3_IntegratorPara)
         @threaded for i in eachindex(integrator.du)
           integrator.k_higher[i] = integrator.du[i] * integrator.dt
         end
-
-        # TODO: Stop for loop at NumStages -1 to avoid if
-        if stage == alg.NumStages - 1
-          @threaded for i in eachindex(integrator.du)
-            integrator.k_S1[i] = integrator.k_higher[i]
-          end
-        end
       end
 
+      # Last stage
+      @threaded for i in eachindex(integrator.du)
+        integrator.u_tmp[i] = integrator.u[i] +
+                              alg.AMatrix[alg.NumStages - 2, 1] *
+                              integrator.k1[i] +
+                              alg.AMatrix[alg.NumStages - 2, 2] *
+                              integrator.k_higher[i]
+      end
+
+      integrator.f(integrator.du, integrator.u_tmp, prob.p,
+                    integrator.t + alg.c[alg.NumStages] * integrator.dt)
+
       @threaded for i in eachindex(integrator.u)
-        # Proposed PERK
-        #integrator.u[i] += 0.75 * integrator.k_S1[i] + 0.25 * integrator.k_higher[i]
-        # Own PERK based on SSPRK33
-        integrator.u[i] += (integrator.k1[i] + integrator.k_S1[i] + 4.0 * integrator.k_higher[i])/6.0
+          # "Own" PairedExplicitRK based on SSPRK33.
+          # Note that 'k_higher' carries the values of K_{S-1}
+          # and that we construct 'K_S' "in-place" from 'integrator.du'
+          integrator.u[i] += (integrator.k1[i] + integrator.k_higher[i] +
+                              4.0 * integrator.du[i] * integrator.dt) / 6.0
       end
     end # PERK step timer
 
@@ -239,7 +237,6 @@ function Base.resize!(integrator::PERK3_IntegratorPara, new_size)
 
   resize!(integrator.k1, new_size)
   resize!(integrator.k_higher, new_size)
-  resize!(integrator.k_S1, new_size)
 
   # TODO: Move this into parabolic cache or similar
   resize!(integrator.du_ode_hyp, new_size)
