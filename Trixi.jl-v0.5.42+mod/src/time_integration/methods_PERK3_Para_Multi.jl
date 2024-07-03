@@ -72,7 +72,6 @@ mutable struct PERK3_Multi_Para_Integrator{RealT<:Real, uType, Params, Sol, F, A
   # PERK3_Para_Multi stages:
   k1::uType
   k_higher::uType
-  k_S1::uType # Required for third order
   # Variables managing level-depending integration
   level_info_elements::Vector{Vector{Int64}}
   level_info_elements_acc::Vector{Vector{Int64}}
@@ -108,7 +107,6 @@ function solve(ode::ODEProblem, alg::PERK3_Para_Multi;
   # PERK3_Para_Multi stages
   k1       = zero(u0)
   k_higher = zero(u0)
-  k_S1     = zero(u0)
 
   du_ode_hyp = zero(u0) # TODO: Not best solution since this is not needed for hyperbolic problems
 
@@ -545,7 +543,7 @@ function solve(ode::ODEProblem, alg::PERK3_Para_Multi;
   integrator = PERK3_Multi_Para_Integrator(u0, du, u_tmp, t0, dt, zero(dt), iter, ode.p,
                 (prob=ode,), ode.f, alg,
                 PERK_IntegratorOptions(callback, ode.tspan; kwargs...), false,
-                k1, k_higher, k_S1,
+                k1, k_higher,
                 level_info_elements, level_info_elements_acc, 
                 level_info_interfaces_acc, 
                 level_info_boundaries_acc, level_info_boundaries_orientation_acc,
@@ -625,7 +623,7 @@ function solve!(integrator::PERK3_Multi_Para_Integrator)
         integrator.k_higher[u_ind] = integrator.du[u_ind] * integrator.dt
       end
 
-      for stage = 3:alg.NumStages
+      for stage = 3:(alg.NumStages - 1)
         # Construct current state
         @threaded for i in eachindex(integrator.u)
           integrator.u_tmp[i] = integrator.u[i]
@@ -695,20 +693,47 @@ function solve!(integrator::PERK3_Multi_Para_Integrator)
                 end
             end
         end
+      end
 
-        if stage == alg.NumStages - 1
-          @threaded for i in eachindex(integrator.du)
-            integrator.k_S1[i] = integrator.k_higher[i]
+      # Last stage: Different treatment for memory-efficient implementation
+      @threaded for i in eachindex(integrator.u)
+        integrator.u_tmp[i] = integrator.u[i]
+      end
+
+      # Loop over different methods with own associated level
+      for level = 1:min(alg.NumMethods, integrator.n_levels)
+        @threaded for u_ind in integrator.level_u_indices_elements[level]
+          integrator.u_tmp[u_ind] += alg.AMatrices[level, alg.NumStages - 2, 1] * integrator.k1[u_ind]
+        end
+      end
+      for level = 1:min(alg.HighestEvalLevels[alg.NumStages], integrator.n_levels)
+        @threaded for u_ind in integrator.level_u_indices_elements[level]
+          integrator.u_tmp[u_ind] += alg.AMatrices[level, alg.NumStages - 2, 2] * integrator.k_higher[u_ind]
+        end
+      end
+
+      # "Remainder": Non-efficiently integrated
+      for level = alg.NumMethods+1:integrator.n_levels
+        @threaded for u_ind in integrator.level_u_indices_elements[level]
+          integrator.u_tmp[u_ind] += alg.AMatrices[alg.NumMethods, alg.NumStages - 2, 1] * integrator.k1[u_ind]
+        end
+      end
+      if alg.HighestEvalLevels[alg.NumStages] == alg.NumMethods
+        for level = alg.HighestEvalLevels[alg.NumStages]+1:integrator.n_levels
+          @threaded for u_ind in integrator.level_u_indices_elements[level]
+            integrator.u_tmp[u_ind] += alg.AMatrices[alg.NumMethods, alg.NumStages - 2, 2] * integrator.k_higher[u_ind]
           end
         end
       end
+
+      integrator.t_stage = integrator.t + alg.c[alg.NumStages] * integrator.dt
+
+      # Last level is always joint
+      integrator.f(integrator.du, integrator.u_tmp, prob.p, integrator.t_stage, integrator.du_ode_hyp)
       
       @threaded for u_ind in eachindex(integrator.u)
-        # Proposed PERK
-        #integrator.u[i] += 0.75 * integrator.k_S1[i] + 0.25 * integrator.k_higher[i]
-
         # Own PERK based on SSPRK33
-        integrator.u[u_ind] += (integrator.k1[u_ind] + integrator.k_S1[u_ind] + 4.0 * integrator.k_higher[u_ind])/6.0
+        integrator.u[u_ind] += (integrator.k1[u_ind] + integrator.k_higher[u_ind] + 4.0 * integrator.du[u_ind] * integrator.dt)/6.0
       end
       
       #=
@@ -780,7 +805,6 @@ function Base.resize!(integrator::PERK3_Multi_Para_Integrator, new_size)
 
   resize!(integrator.k1, new_size)
   resize!(integrator.k_higher, new_size)
-  resize!(integrator.k_S1, new_size)
 
   # TODO: Move this into parabolic cache or similar
   resize!(integrator.du_ode_hyp, new_size)
